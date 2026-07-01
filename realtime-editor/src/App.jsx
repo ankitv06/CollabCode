@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import './App.css'
 import {BrowserRouter, Routes, Route} from 'react-router-dom'
-import Home from './components/Home'
-import Editor from './components/Editor'
+import Home from './pages/Home'
+import Editor from './pages/Editor'
 import {Toaster} from 'react-hot-toast'
 
 function App() {

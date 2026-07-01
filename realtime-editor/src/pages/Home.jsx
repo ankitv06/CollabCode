@@ -37,7 +37,7 @@ function Home() {
                 <p className='text-sm '>A real-time collaborative code editor</p>
 
                 <div className="inputGroup">
-                    <h4 className="pt-4 pb-2">Paste invitation Room ID</h4>
+                    <p className="pt-4 pb-2">Paste invitation Room ID</p>
                     <input
                         type="text"
                         className="inputBox text-gray-800"
