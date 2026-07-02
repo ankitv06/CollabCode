@@ -16,16 +16,71 @@ function Editor() {
     const {editorId: roomId} = useParams();
 
     const [clients, setClients] = useState([]);
-    const [isDarkMode, setIsDarkMode] = useState(true);
+    const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') !== 'light');
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [localUsername, setLocalUsername] = useState(location.state?.username || '');
+    const [localUsername, setLocalUsername] = useState(() => {
+        if (location.state?.username) return location.state.username;
+        const savedIdentities = JSON.parse(localStorage.getItem('collab_identities') || '{}');
+        if (savedIdentities[roomId]) return savedIdentities[roomId];
+        return "Anonymous";
+    });
+
+    const [isPrimaryTab, setIsPrimaryTab] = useState(true);
+    const isPrimaryTabRef = useRef(true);
+    const channelRef = useRef(null);
+    const localUsernameRef = useRef(localUsername);
+
+    useEffect(() => {
+        localUsernameRef.current = localUsername;
+        const savedIdentities = JSON.parse(localStorage.getItem('collab_identities') || '{}');
+        savedIdentities[roomId] = localUsername;
+        localStorage.setItem('collab_identities', JSON.stringify(savedIdentities));
+
+        if (isPrimaryTab && channelRef.current) {
+            channelRef.current.postMessage({ type: 'NAME_UPDATED', username: localUsername });
+        }
+    }, [localUsername, roomId, isPrimaryTab]);
+
+    useEffect(() => {
+        const channel = new BroadcastChannel('room_' + roomId);
+        channelRef.current = channel;
+        
+        channel.postMessage({ type: 'PING_PRIMARY' });
+
+        channel.onmessage = (event) => {
+            if (event.data.type === 'PING_PRIMARY') {
+                if (isPrimaryTabRef.current) {
+                    channel.postMessage({ type: 'PONG_PRIMARY', username: localUsernameRef.current });
+                }
+            } else if (event.data.type === 'PONG_PRIMARY' || (event.data.type === 'NAME_UPDATED' && !isPrimaryTabRef.current)) {
+                if (event.data.type === 'PONG_PRIMARY') {
+                    isPrimaryTabRef.current = false;
+                    setIsPrimaryTab(false);
+                }
+                const newName = event.data.username;
+                setLocalUsername(newName);
+                
+                if (socketRef.current) {
+                    socketRef.current.emit(ACTIONS.NAME_CHANGE, { roomId, username: newName });
+                    setClients(prev => prev.map(c => 
+                        c.socketId === socketRef.current.id ? {...c, username: newName} : c
+                    ));
+                }
+            }
+        };
+
+        return () => {
+            channel.close();
+            channelRef.current = null;
+        };
+    }, [roomId]);
 
     async function copyRoomId() {
         try {
-            await navigator.clipboard.writeText(roomId);
-            toast.success('Room ID copied!');
+            await navigator.clipboard.writeText(window.location.href);
+            toast.success('Room Link copied!');
         } catch (error) {
-            toast.error('Could not copy Room ID.');
+            toast.error('Could not copy Room Link.');
             console.log(error);
         }
     }
@@ -58,11 +113,11 @@ function Editor() {
 
             socketRef.current.emit(ACTIONS.JOIN, {
                 roomId,
-                username: location.state?.username
+                username: localUsername
             });
 
             socketRef.current.on(ACTIONS.JOINED, ({socketId, username, clients}) => {
-                if(username !== location.state?.username){
+                if(username !== localUsername){
                     toast.success(`${username} has joined the room!`);
                     console.log(`${username} joined`);
                 }
@@ -96,9 +151,13 @@ function Editor() {
         }; 
     }, [])
 
-    if(!location.state) return <Navigate to='/'/>
-
-    const toggleTheme = () => setIsDarkMode(prev => !prev);
+    const toggleTheme = () => {
+        setIsDarkMode(prev => {
+            const newTheme = !prev;
+            localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+            return newTheme;
+        });
+    };
 
     const handleNameChange = (e) => {
         setLocalUsername(e.target.value);
@@ -128,8 +187,13 @@ function Editor() {
             <div className={`mainWrap h-screen ${!isDarkMode ? 'light-mode' : ''} ${isCollapsed ? 'collapsed' : ''}`}>
                 <div className="aside">
                     <div className="asideInner">
-                        <div className="logo">
-                            {!isCollapsed && <h1 className='text-green-600 text-2xl'>CollabCode</h1>}
+                        <div className="logo" style={{ display: 'flex', alignItems: 'center' }}>
+                            {!isCollapsed && (
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <span className="logoBrackets" style={{ fontSize: '24px' }}>&lt;&gt;</span>
+                                    <span className="collabLogo" style={{ fontSize: '24px' }}>collabcode</span>
+                                </div>
+                            )}
                             <button onClick={() => setIsCollapsed(!isCollapsed)} className="collapseBtn">
                                 {isCollapsed ? (
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
@@ -155,10 +219,10 @@ function Editor() {
                             )}
                         </div>
 
-                        <div className="shareLinkWrapper" title="Copy Room ID">
-                            {!isCollapsed && <span className="shareTitle">Share Room</span>}
+                        <div className="shareLinkWrapper" title="Copy Room Link">
+                            {!isCollapsed && <span className="shareTitle">Invite Link</span>}
                             <div className="shareInputBox">
-                                {!isCollapsed && <input type="text" value={roomId} readOnly />}
+                                {!isCollapsed && <input type="text" value={window.location.href} readOnly />}
                                 <button onClick={copyRoomId}>
                                     {isCollapsed ? (
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -186,6 +250,8 @@ function Editor() {
                                                             onKeyDown={handleNameKeyDown}
                                                             className="editableUsername"
                                                             style={{ color: localColor }}
+                                                            disabled={!isPrimaryTab}
+                                                            title={!isPrimaryTab ? "Name can only be changed in the primary tab" : ""}
                                                         />
                                                         <span className="youLabel">(you)</span>
                                                     </div>
@@ -202,7 +268,7 @@ function Editor() {
                     <button className="btn leaveBtn" onClick={leaveRoom} title="Leave Room">
                         {isCollapsed ? (
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        ) : 'Leave'}
+                        ) : 'Leave Room'}
                     </button>
                 </div>
                 <div className="editorWrap">

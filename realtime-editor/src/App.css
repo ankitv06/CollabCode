@@ -1,94 +1,154 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@800&display=swap');
 
-.homePageWrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    height: 100vh;
-}
-
-.formWrapper {
-    background: #282a36;
-    padding: 20px;
-    border-radius: 10px;
-    width: 400px;
-    max-width: 90%;
-}
-
-footer {
-    position: fixed;
-    bottom: 0;
-}
-
-footer a {
-    color: #4aee88;
-}
-
-.inputGroup {
+.homeWrapper {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #1e1e1e;
+    color: #ccc;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.mainLabel {
-    margin-bottom: 20px;
-    margin-top: 0;
+.homeWrapper.light-mode {
+    background: #ffffff;
+    color: #333;
 }
 
-.homePageLogo {
-    height: 80px;
-    margin-bottom: 30px;
-}
-
-.inputBox {
-    padding: 10px;
-    border-radius: 5px;
-    outline: none;
-    border: none;
-    margin-bottom: 14px;
-    background: #eee;
-    font-size: 16px;
-    font-weight: bold;
-}
-
-.btn {
-    border: none;
-    padding: 10px;
-    border-radius: 5px;
-    font-size: 16px;
-    font-weight: bold;
+.homeThemeToggle {
+    position: absolute;
+    top: 24px;
+    right: 24px;
     cursor: pointer;
-    transition: all 0.3s ease-in-out;
+    color: #888;
+    transition: color 0.2s;
 }
 
-.joinBtn,
-.leaveBtn {
+.homeThemeToggle:hover {
+    color: #fff;
+}
+
+.homeWrapper.light-mode .homeThemeToggle:hover {
+    color: #111;
+}
+
+.homeHero {
+    width: 100%;
+    max-width: 450px;
+    padding: 40px;
+    text-align: center;
+}
+
+.homeTitle {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #136332;
+    margin-bottom: 10px;
+}
+
+.homeWrapper.light-mode .homeTitle {
+    color: #248348;
+}
+
+.homeSubtitle {
+    font-size: 1rem;
+    margin-bottom: 40px;
+    opacity: 0.8;
+}
+
+.homeInputs {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.homeInput {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #252526;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+
+.homeInput:focus {
+    border-color: #136332;
+    box-shadow: 0 0 0 2px rgba(77, 79, 78, 0.2);
+}
+
+.homeWrapper.light-mode .homeInput {
+    background: #f3f3f3;
+    border-color: #ccc;
+    color: #333;
+}
+
+.homeWrapper.light-mode .homeInput:focus {
+    border-color: #248348;
+    box-shadow: 0 0 0 2px rgba(22, 92, 49, 0.2);
+}
+
+.homeButtons {
+    display: flex;
+    gap: 16px;
+}
+
+.homeBtn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    outline: none;
+}
+
+.homeBtn.primary {
     background: #165c31;
-    width: 100px;
-    margin-left: auto;
+    color: #fff;
+}
+.homeBtn.primary:hover {
+    background: #114524;
 }
 
-.joinBtn:hover,
-.leaveBtn:hover {
-    background: #2b824c;
+.homeWrapper.light-mode .homeBtn.primary {
+    background: #23934e;
+}
+.homeWrapper.light-mode .homeBtn.primary:hover {
+    background: #1c713b;
 }
 
-.createInfo {
-    margin: 0 auto;
-    margin-top: 20px;
+.homeBtn.secondary {
+    background: transparent;
+    border: 1px solid #444;
+    color: #ccc;
+}
+.homeBtn.secondary:hover:not(:disabled) {
+    border-color: #888;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+.homeBtn.secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-.createNewBtn {
-    color: #4aed88;
-    text-decoration: none;
-    border-bottom: 1px solid #4aed88;
-    transition: all 0.3s ease-in-out;
+.homeWrapper.light-mode .homeBtn.secondary {
+    border-color: #ccc;
+    color: #666;
 }
-
-.createNewBtn:hover,
-footer a:hover {
-    color: #368654;
-    border-color: #368654;
+.homeWrapper.light-mode .homeBtn.secondary:hover:not(:disabled) {
+    border-color: #333;
+    color: #111;
+    background: rgba(0, 0, 0, 0.05);
 }
 
 .mainWrap {
@@ -103,7 +163,10 @@ footer a:hover {
 
 .aside {
     background: #252526;
-    padding: 16px;
+    padding-top: 7px;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 16px;
     color: #fff;
     display: flex;
     flex-direction: column;
@@ -112,6 +175,7 @@ footer a:hover {
 }
 .asideInner {
     flex: 1;
+    gap: 10px;
     overflow: hidden;
 }
 
@@ -139,7 +203,7 @@ footer a:hover {
     border-bottom: 1px solid #424242;
     padding-bottom: 0;
     white-space: nowrap;
-    height: 44px;
+    height: 53px;
     box-sizing: border-box;
 }
 
@@ -271,7 +335,7 @@ footer a:hover {
     border-color: #ddd;
 }
 .light-mode .langSelectBar {
-    background: #e0e0e0;
+    background: #f5f5f5;
     color: #333;
     border-color: #ccc;
 }
@@ -286,7 +350,7 @@ footer a:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 10px;
+    margin-top: 20px;
     margin-bottom: 20px;
     font-weight: bold;
 }
@@ -363,7 +427,7 @@ input:checked + .slider:before {
     color: #333;
 }
 .shareInputBox button {
-    background: #165c31;
+    background: #2D8CFF;
     color: #fff;
     border: none;
     border-radius: 4px;
@@ -373,10 +437,10 @@ input:checked + .slider:before {
     font-size: 12px;
 }
 .shareInputBox button:hover {
-    background: #2b824c;
+    background: #1A73E8;
 }
 .shareInputBox button:active {
-    background: #165c31;
+    background: #0D47A1;
 }
 
 /* Active Users */
@@ -455,25 +519,19 @@ input:checked + .slider:before {
 
 /* Light mode btn hover fixes */
 .light-mode .btn,
-.light-mode .leaveBtn,
-.light-mode .shareInputBox button {
-    background: #e6f4ea;
-    color: #137333;
-    transition: all 0.3s ease;
+.light-mode .leaveBtn{
+    background: rgb(244, 199, 199);
+    color: rgb(150, 3, 3);
 }
 
 .light-mode .btn:hover,
-.light-mode .leaveBtn:hover,
-.light-mode .shareInputBox button:hover {
-    background: #ceead6;
-    color: #0d652d;
+.light-mode .leaveBtn:hover{
+    background: rgb(243, 174, 174)
 }
 
 .light-mode .btn:active,
-.light-mode .leaveBtn:active,
-.light-mode .shareInputBox button:active {
-    background: #e6f4ea;
-    color: #137333;
+.light-mode .leaveBtn:active{
+    background: rgb(244, 199, 199)
 }
 
 /* Dark mode active fix */
@@ -528,8 +586,53 @@ input:checked + .slider:before {
     background: #303031;
 }
 .light-mode .settingsBtn{
-    background: #e0e0e0;
+    background: #f5f5f5;
 }
 .light-mode .settingsBtn:hover{
-    background: #cccbcb;
+    background: #e3e3e3;
+}
+
+/* Restored Leave Button Styles */
+.btn {
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+}
+
+.leaveBtn {
+    background: rgb(137, 18, 18);
+    width: 100%;
+    margin-left: auto;
+    color: #fff;
+}
+
+.leaveBtn:hover {
+    background: rgb(166, 29, 29);
+}
+
+/* Zoom-like Logo Typography */
+.collabLogo {
+    font-family: 'Nunito', 'Arial Rounded MT Bold', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: #2D8CFF; /* Zoom Blue */
+    letter-spacing: -1.5px;
+    line-height: 1;
+    user-select: none;
+}
+
+.logoBrackets {
+    color: #136332;
+    font-family: 'Nunito', 'Arial Rounded MT Bold', sans-serif;
+    font-size: 32px;
+    font-weight: 900;
+    margin-right: 4px;
+    letter-spacing: -1px;
+}
+.light-mode .logoBrackets {
+    color: #248348;
 }

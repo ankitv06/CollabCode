@@ -190,9 +190,12 @@ function CodeEditor({ roomId, username, color, theme, socketRef }) {
     const ydoc = new Y.Doc();
     const ytext = ydoc.getText('codemirror');
 
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    const wsUrl = backendUrl.replace(/^http/, 'ws');
+
     // Connect to y-websocket server using roomId as the document name
     const provider = new WebsocketProvider(
-      'ws://localhost:1234',
+      wsUrl,
       roomId,
       ydoc
     );
@@ -208,7 +211,6 @@ function CodeEditor({ roomId, username, color, theme, socketRef }) {
     const view = new EditorView({
       extensions: [
         basicSetup,
-        lintGutter(),
         keymap.of([indentWithTab]),
         langCompartment.current.of([ LANGUAGES[language].ext(), syntaxLinter ]),
         themeCompartment.current.of(theme === 'dark' ? vscodeDark : vscodeLight),
@@ -240,6 +242,17 @@ function CodeEditor({ roomId, username, color, theme, socketRef }) {
       ydoc.destroy();
     };
   }, [roomId]); // Do not recreate Y.Doc on username/color changes
+
+  // Update Yjs awareness when username or color changes
+  useEffect(() => {
+    if (providerRef.current) {
+      providerRef.current.awareness.setLocalStateField('user', {
+        name: username || 'Anonymous',
+        color: color || '#E06C75',
+        colorLight: (color || '#E06C75') + '40',
+      });
+    }
+  }, [username, color]);
 
   useEffect(() => {
     if (socketRef.current) {
