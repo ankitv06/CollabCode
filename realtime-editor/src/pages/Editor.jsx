@@ -7,14 +7,29 @@ import { initSocket } from '../socket';
 import { ACTIONS } from '../../Actions';
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { func } from 'prop-types';
 
 function Editor() {
     const socketRef = useRef(null);
     const location = useLocation();
     const reactNavigator = useNavigate();
-    const {roomId} = useParams();
+    const {editorId: roomId} = useParams();
 
     const [clients, setClients] = useState([]);
+
+    async function copyRoomId() {
+        try {
+            await navigator.clipboard.writeText(roomId);
+            toast.success('Room ID copied!');
+        } catch (error) {
+            toast.error('Could not copy Room ID.');
+            console.log(error);
+        }
+    }
+
+    function leaveRoom() {
+        reactNavigator('/');
+    }
 
     useEffect(() => {
         let active = true;
@@ -91,16 +106,18 @@ function Editor() {
                             ))}
                         </div>
                     </div>
-                    <button className="btn bg-zinc-700 text-white hover:bg-gray-600" >
+                    <button className="btn bg-zinc-700 text-white hover:bg-gray-600" onClick={copyRoomId} >
                         Copy ROOM ID
                     </button>
-                    <button className="btn leaveBtn" >
+                    <button className="btn leaveBtn" onClick={leaveRoom}>
                         Leave
                     </button>
                 </div>
                 <div className="editorWrap">
                     <CodeEditor
-                        
+                        roomId={roomId}
+                        username={location.state?.username}
+                        socketRef={socketRef}
                     />
                 </div>
             </div>

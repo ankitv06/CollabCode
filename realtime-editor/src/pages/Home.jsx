@@ -13,8 +13,7 @@ function Home() {
         e.preventDefault();
         const id = uuidv4();
         setRoomId(id);
-        navigator.clipboard.writeText(id);
-        toast.success("New Room ID copied!")
+        toast.success("New room created!")
     }
 
     const switchPage = ()=>{

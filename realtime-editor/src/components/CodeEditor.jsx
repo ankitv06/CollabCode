@@ -2,8 +2,12 @@ import React, { useEffect, useRef, useState } from 'react'
 import { basicSetup } from "codemirror"
 import { EditorView } from "@codemirror/view"
 import { Compartment } from "@codemirror/state"
-import { oneDark } from "@codemirror/theme-one-dark"
+import { vscodeDark, vscodeLight } from "@uiw/codemirror-theme-vscode";
 import { autocompletion } from "@codemirror/autocomplete"
+
+import * as Y from 'yjs'
+import { WebsocketProvider } from 'y-websocket'
+import { yCollab } from 'y-codemirror.next'
 
 import { javascript } from "@codemirror/lang-javascript"
 import { python } from "@codemirror/lang-python"
@@ -17,6 +21,29 @@ import { xml } from "@codemirror/lang-xml"
 import { sql } from "@codemirror/lang-sql"
 import { php } from "@codemirror/lang-php"
 import { rust } from "@codemirror/lang-rust"
+
+import { linter, lintGutter } from "@codemirror/lint";
+import { syntaxTree } from "@codemirror/language";
+import { ACTIONS } from '../../Actions';
+
+export const syntaxLinter = linter((view) => {
+  const diagnostics = [];
+
+  syntaxTree(view.state).iterate({
+    enter(node) {
+      if (node.type.isError) {
+        diagnostics.push({
+          from: node.from,
+          to: node.to,
+          severity: "error",
+          message: "Syntax error",
+        });
+      }
+    },
+  });
+
+  return diagnostics;
+});
 
 // Creates a completion source from a keyword list
 function keywordCompletionSource(keywords) {
@@ -128,41 +155,72 @@ const LANGUAGES = {
   rust:        { label: "Rust",        ext: () => [rust(), autocompletion({ override: [keywordCompletionSource(RUST_KEYWORDS)] })] },
 };
 
+// Random color for cursor
+function getRandomColor() {
+  const colors = [
+    '#E06C75', '#61AFEF', '#98C379', '#E5C07B', '#C678DD',
+    '#56B6C2', '#BE5046', '#D19A66', '#7EC8E3', '#C3E88D',
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
 
-function CodeEditor() {
+function CodeEditor({ roomId, username, socketRef }) {
   const editorRef = useRef(null);
-  const viewRef = useRef(null);
   const langCompartment = useRef(new Compartment());
   const [language, setLanguage] = useState("javascript");
 
   useEffect(() => {
+    // Create Yjs document and shared text type
+    const ydoc = new Y.Doc();
+    const ytext = ydoc.getText('codemirror');
+
+    // Connect to y-websocket server using roomId as the document name
+    const provider = new WebsocketProvider(
+      'ws://localhost:1234',
+      roomId,
+      ydoc
+    );
+
+    // Set local user awareness (cursor label + color)
+    const cursorColor = getRandomColor();
+    provider.awareness.setLocalStateField('user', {
+      name: username || 'Anonymous',
+      color: cursorColor,
+      colorLight: cursorColor + '40',
+    });
+
     const view = new EditorView({
-      doc: "// Start coding here...\n",
       extensions: [
         basicSetup,
+        syntaxLinter,
         langCompartment.current.of(LANGUAGES[language].ext()),
-        oneDark,
+        vscodeDark,
+        yCollab(ytext, provider.awareness), // handles merging of concurrent changes without conflicts
         EditorView.theme({
-          "&": { height: "100%" },
+          "&": {
+            height: "100%",
+          },
           ".cm-scroller": { overflow: "auto" },
         }),
       ],
-      parent: editorRef.current,
+      parent: document.querySelector('#realtimeEditor'),
     });
 
-    viewRef.current = view;
+    editorRef.current = view;
 
     return () => {
       view.destroy();
+      provider.disconnect();
+      ydoc.destroy();
     };
-  }, []);
+  }, [roomId, username]);
 
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
     setLanguage(newLang);
 
-    if (viewRef.current) {
-      viewRef.current.dispatch({
+    if (editorRef.current) {
+      editorRef.current.dispatch({
         effects: langCompartment.current.reconfigure(LANGUAGES[newLang].ext()),
       });
     }
@@ -182,9 +240,10 @@ function CodeEditor() {
           ))}
         </select>
       </div>
-      <div className='flex-1 overflow-auto' id="realtimeEditor" ref={editorRef}></div>
+      <div className='flex-1 overflow-auto' id="realtimeEditor"></div>
     </div>
   )
 }
 
 export default CodeEditor
+

@@ -93,11 +93,11 @@ footer a:hover {
 
 .mainWrap {
     display: grid;
-    grid-template-columns: 230px 1fr;
+    grid-template-columns: 300px 1fr;
 }
 
 .aside {
-    background: #1c1e29;
+    background: #252526;
     padding: 16px;
     color: #fff;
     display: flex;
@@ -147,14 +147,14 @@ footer a:hover {
     align-items: center;
     gap: 10px;
     padding: 8px 16px;
-    background: #1e1e2e;
+    background: #252526;
     border-bottom: 1px solid #333;
     color: #ccc;
     font-size: 14px;
 }
 
 .langSelectBar select {
-    background: #2b2b3d;
+    background: #252526;
     color: #fff;
     border: 1px solid #444;
     border-radius: 4px;
@@ -172,4 +172,38 @@ footer a:hover {
     height: 100%;
     font-size: 20px;
     line-height: 1.6;
+}
+
+/* Add padding to the content area so cursor labels don't get cropped on the first/last lines */
+.cm-content {
+    padding-top: 24px !important;
+    padding-bottom: 24px !important;
+}
+
+/* Remote cursor line */
+.yRemoteSelection {
+    opacity: 0.3;
+}
+
+/* Remote cursor caret */
+.yRemoteSelectionHead {
+    position: absolute;
+    border-left: 2px solid;
+    border-color: inherit;
+    height: 100%;
+}
+
+/* Username label above cursor */
+.yRemoteSelectionHead::after {
+    content: attr(data-yjs-user);
+    position: absolute;
+    top: -1.4em;
+    left: -1px;
+    font-size: 0.75rem;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #fff;
+    background-color: inherit;
+    white-space: nowrap;
+    font-family: sans-serif;
 }
