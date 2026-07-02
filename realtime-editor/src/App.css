@@ -94,6 +94,11 @@ footer a:hover {
 .mainWrap {
     display: grid;
     grid-template-columns: 300px 1fr;
+    transition: grid-template-columns 0.3s ease;
+}
+
+.mainWrap.collapsed {
+    grid-template-columns: 80px 1fr;
 }
 
 .aside {
@@ -102,9 +107,12 @@ footer a:hover {
     color: #fff;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    transition: padding 0.3s ease;
 }
 .asideInner {
     flex: 1;
+    overflow: hidden;
 }
 
 .clientsList {
@@ -125,8 +133,45 @@ footer a:hover {
 }
 
 .logo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     border-bottom: 1px solid #424242;
-    padding-bottom: 10px;
+    padding-bottom: 0;
+    white-space: nowrap;
+    height: 44px;
+    box-sizing: border-box;
+}
+
+.collapseBtn {
+    background: transparent;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+}
+
+.collapseBtn:hover {
+    background: #444;
+    color: #fff;
+}
+
+.light-mode .collapseBtn {
+    color: #666;
+}
+
+.light-mode .collapseBtn:hover {
+    background: #d4d4d4;
+    color: #111;
+}
+
+.collapsed .logo {
+    justify-content: center;
 }
 
 .logoImage {
@@ -146,11 +191,13 @@ footer a:hover {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 16px;
+    padding: 0 16px;
     background: #252526;
     border-bottom: 1px solid #333;
     color: #ccc;
     font-size: 14px;
+    height: 60px;
+    box-sizing: border-box;
 }
 
 .langSelectBar select {
@@ -162,10 +209,15 @@ footer a:hover {
     font-size: 14px;
     outline: none;
     cursor: pointer;
+    transition: border-color 0.2s ease;
 }
 
 .langSelectBar select:hover {
-    border-color: #4aed88;
+    border-color: #888;
+}
+
+.light-mode .langSelectBar select:hover {
+    border-color: #666;
 }
 
 .cm-editor {
@@ -206,4 +258,278 @@ footer a:hover {
     background-color: inherit;
     white-space: nowrap;
     font-family: sans-serif;
+}
+
+/* --- New UI Styles --- */
+
+/* Light Mode Overrides */
+.light-mode .aside {
+    background: #f5f5f5;
+    color: #333;
+}
+.light-mode .logo {
+    border-color: #ddd;
+}
+.light-mode .langSelectBar {
+    background: #e0e0e0;
+    color: #333;
+    border-color: #ccc;
+}
+.light-mode .langSelectBar select {
+    background: #fff;
+    color: #333;
+    border-color: #aaa;
+}
+
+/* Theme Toggle */
+.themeToggleWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+.toggleSwitch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+}
+.toggleSwitch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+}
+input:checked + .slider {
+    background-color: #2196F3;
+}
+input:checked + .slider:before {
+    transform: translateX(18px);
+}
+.slider.round {
+    border-radius: 22px;
+}
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Share Room */
+.shareLinkWrapper {
+    margin-bottom: 20px;
+}
+.shareTitle {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+.shareInputBox {
+    display: flex;
+    background: #1e1e1e;
+    border-radius: 4px;
+    padding: 4px;
+    align-items: center;
+}
+.light-mode .shareInputBox {
+    background: #e0e0e0;
+}
+.shareInputBox input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #ccc;
+    padding: 4px 8px;
+    outline: none;
+    font-size: 14px;
+}
+.light-mode .shareInputBox input {
+    color: #333;
+}
+.shareInputBox button {
+    background: #165c31;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+}
+.shareInputBox button:hover {
+    background: #2b824c;
+}
+.shareInputBox button:active {
+    background: #165c31;
+}
+
+/* Active Users */
+.activeUsersWrapper {
+    margin-bottom: 20px;
+}
+.activeUsersTitle {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+.activeUsersList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.userRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.localUserEdit {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+}
+.editableUsername {
+    background: transparent;
+    border: 1px dashed transparent;
+    color: #4a88ee;
+    font-size: 14px;
+    font-weight: normal;
+    outline: none;
+    width: 100%;
+}
+.editableUsername:focus {
+    border-color: #4a88ee;
+    border-radius: 2px;
+}
+.youLabel {
+    color: #aaa;
+    font-size: 14px;
+}
+.remoteUsername {
+    color: #e06c75;
+    font-size: 14px;
+}
+
+/* Collapsed Sidebar Tweaks */
+.collapsed .themeToggleWrapper {
+    justify-content: center;
+    margin-top: 16px;
+    margin-bottom: 24px;
+}
+.collapsed .shareInputBox {
+    background: transparent;
+    padding: 0;
+    justify-content: center;
+}
+.collapsed .shareInputBox button {
+    padding: 8px;
+}
+.collapsed .activeUsersList {
+    align-items: center;
+}
+.collapsed .userRow {
+    justify-content: center;
+}
+.collapsed .leaveBtn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+
+/* Light mode btn hover fixes */
+.light-mode .btn,
+.light-mode .leaveBtn,
+.light-mode .shareInputBox button {
+    background: #e6f4ea;
+    color: #137333;
+    transition: all 0.3s ease;
+}
+
+.light-mode .btn:hover,
+.light-mode .leaveBtn:hover,
+.light-mode .shareInputBox button:hover {
+    background: #ceead6;
+    color: #0d652d;
+}
+
+.light-mode .btn:active,
+.light-mode .leaveBtn:active,
+.light-mode .shareInputBox button:active {
+    background: #e6f4ea;
+    color: #137333;
+}
+
+/* Dark mode active fix */
+.leaveBtn:active {
+    background: #165c31;
+}
+
+/* Settings Menu Styling */
+.settingsMenu {
+    background: #252526;
+    border: 1px solid #444;
+    color: #ccc;
+}
+.light-mode .settingsMenu {
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+    color: #333;
+}
+.settingsMenu select, 
+.settingsMenu input[type="range"] {
+    background: #1e1e1e;
+    color: #fff;
+    border: 1px solid #444;
+    transition: border-color 0.2s ease;
+    cursor: pointer;
+}
+.settingsMenu select:hover,
+.settingsMenu input[type="range"]:hover {
+    border-color: #888;
+}
+.light-mode .settingsMenu select, 
+.light-mode .settingsMenu input[type="range"] {
+    background: #fff;
+    color: #333;
+    border: 1px solid #aaa;
+}
+.light-mode .settingsMenu select:hover,
+.light-mode .settingsMenu input[type="range"]:hover {
+    border-color: #666;
+}
+
+.settingsBtn:hover {
+    background: #444;
+}
+.light-mode .settingsBtn:hover {
+    background: #d4d4d4;
+}
+.settingsBtn{
+    background: #252526;
+}
+.settingsBtn:hover{
+    background: #303031;
+}
+.light-mode .settingsBtn{
+    background: #e0e0e0;
+}
+.light-mode .settingsBtn:hover{
+    background: #cccbcb;
 }

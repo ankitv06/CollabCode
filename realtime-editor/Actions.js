@@ -4,6 +4,7 @@ export const ACTIONS = {
     DISCONNECTED: 'disconnected',
     CODE_CHANGE: 'code-change',
     LANG_CHANGE: 'language-change',
+    NAME_CHANGE: 'name-change',
     SYNC_CODE: 'sync-code',
     LEAVE: 'leave',
 };

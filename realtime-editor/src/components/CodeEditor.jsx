@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { basicSetup } from "codemirror"
-import { EditorView } from "@codemirror/view"
-import { Compartment } from "@codemirror/state"
+import { EditorView, gutter, GutterMarker, keymap } from "@codemirror/view"
+import { Compartment, EditorState, StateField, StateEffect, RangeSet } from "@codemirror/state"
 import { vscodeDark, vscodeLight } from "@uiw/codemirror-theme-vscode";
+import '@fontsource/fira-code';
+import '@fontsource/source-code-pro';
 import { autocompletion } from "@codemirror/autocomplete"
+import {indentWithTab} from "@codemirror/commands"
 
 import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
@@ -22,8 +25,8 @@ import { sql } from "@codemirror/lang-sql"
 import { php } from "@codemirror/lang-php"
 import { rust } from "@codemirror/lang-rust"
 
-import { linter, lintGutter } from "@codemirror/lint";
-import { syntaxTree } from "@codemirror/language";
+import { linter, lintGutter, forceLinting } from "@codemirror/lint";
+import { syntaxTree, indentUnit } from "@codemirror/language";
 import { ACTIONS } from '../../Actions';
 
 export const syntaxLinter = linter((view) => {
@@ -155,19 +158,32 @@ const LANGUAGES = {
   rust:        { label: "Rust",        ext: () => [rust(), autocompletion({ override: [keywordCompletionSource(RUST_KEYWORDS)] })] },
 };
 
-// Random color for cursor
-function getRandomColor() {
-  const colors = [
-    '#E06C75', '#61AFEF', '#98C379', '#E5C07B', '#C678DD',
-    '#56B6C2', '#BE5046', '#D19A66', '#7EC8E3', '#C3E88D',
-  ];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
-
-function CodeEditor({ roomId, username, socketRef }) {
+function CodeEditor({ roomId, username, color, theme, socketRef }) {
   const editorRef = useRef(null);
   const langCompartment = useRef(new Compartment());
+  const themeCompartment = useRef(new Compartment());
+  const settingsCompartment = useRef(new Compartment());
   const [language, setLanguage] = useState("javascript");
+  
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef(null);
+  
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (settingsRef.current && !settingsRef.current.contains(event.target)) {
+        setSettingsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const [fontFamily, setFontFamily] = useState('Consolas, "Courier New", monospace');
+  const [fontSize, setFontSize] = useState(15);
+  const [tabSize, setTabSize] = useState(2);
+  const [wordWrap, setWordWrap] = useState(false);
 
   useEffect(() => {
     // Create Yjs document and shared text type
@@ -180,21 +196,31 @@ function CodeEditor({ roomId, username, socketRef }) {
       roomId,
       ydoc
     );
+    providerRef.current = provider;
 
     // Set local user awareness (cursor label + color)
-    const cursorColor = getRandomColor();
     provider.awareness.setLocalStateField('user', {
       name: username || 'Anonymous',
-      color: cursorColor,
-      colorLight: cursorColor + '40',
+      color: color || '#E06C75',
+      colorLight: (color || '#E06C75') + '40',
     });
 
     const view = new EditorView({
       extensions: [
         basicSetup,
-        syntaxLinter,
-        langCompartment.current.of(LANGUAGES[language].ext()),
-        vscodeDark,
+        lintGutter(),
+        keymap.of([indentWithTab]),
+        langCompartment.current.of([ LANGUAGES[language].ext(), syntaxLinter ]),
+        themeCompartment.current.of(theme === 'dark' ? vscodeDark : vscodeLight),
+        settingsCompartment.current.of([
+          EditorState.tabSize.of(tabSize),
+          indentUnit.of(" ".repeat(tabSize)),
+          EditorView.theme({
+            "&": { fontSize: `${fontSize}px` },
+            ".cm-content, .cm-gutter": { fontFamily: fontFamily, fontSize: `${fontSize}px` }
+          }),
+          ...(wordWrap ? [EditorView.lineWrapping] : [])
+        ]),
         yCollab(ytext, provider.awareness), // handles merging of concurrent changes without conflicts
         EditorView.theme({
           "&": {
@@ -213,7 +239,73 @@ function CodeEditor({ roomId, username, socketRef }) {
       provider.disconnect();
       ydoc.destroy();
     };
-  }, [roomId, username]);
+  }, [roomId]); // Do not recreate Y.Doc on username/color changes
+
+  useEffect(() => {
+    if (socketRef.current) {
+      socketRef.current.on(ACTIONS.LANG_CHANGE, ({ language: newLang }) => {
+        if (newLang && LANGUAGES[newLang]) {
+          setLanguage(newLang);
+          if (editorRef.current) {
+            editorRef.current.dispatch({
+              effects: langCompartment.current.reconfigure([ LANGUAGES[newLang].ext(), syntaxLinter ]),
+            });
+            forceLinting(editorRef.current);
+          }
+        }
+      });
+
+      // Request current room language now that listener is ready
+      socketRef.current.emit('request_language', { roomId });
+    }
+
+    return () => {
+      socketRef.current?.off(ACTIONS.LANG_CHANGE);
+    };
+  }, [socketRef.current]);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.dispatch({
+        effects: themeCompartment.current.reconfigure(theme === 'dark' ? vscodeDark : vscodeLight),
+      });
+    }
+  }, [theme]);
+
+  // Keep a ref to the provider to update awareness later
+  const providerRef = useRef(null);
+
+  useEffect(() => {
+    if (providerRef.current) {
+      const state = providerRef.current.awareness.getLocalState();
+      if (state && state.user && (state.user.name !== username || state.user.color !== color)) {
+        providerRef.current.awareness.setLocalStateField('user', {
+          ...state.user,
+          name: username || 'Anonymous',
+          color: color || '#E06C75',
+          colorLight: (color || '#E06C75') + '40',
+        });
+      }
+    }
+  }, [username, color]);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      const extensions = [
+        EditorState.tabSize.of(tabSize),
+        indentUnit.of(" ".repeat(tabSize)),
+        EditorView.theme({
+          "&": { fontSize: `${fontSize}px` },
+          ".cm-content, .cm-gutter": { fontFamily: fontFamily, fontSize: `${fontSize}px` }
+        })
+      ];
+      if (wordWrap) extensions.push(EditorView.lineWrapping);
+
+      editorRef.current.dispatch({
+        effects: settingsCompartment.current.reconfigure(extensions),
+      });
+    }
+  }, [fontSize, fontFamily, tabSize, wordWrap]);
 
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
@@ -221,24 +313,64 @@ function CodeEditor({ roomId, username, socketRef }) {
 
     if (editorRef.current) {
       editorRef.current.dispatch({
-        effects: langCompartment.current.reconfigure(LANGUAGES[newLang].ext()),
+        effects: langCompartment.current.reconfigure([ LANGUAGES[newLang].ext(), syntaxLinter ]),
       });
+      forceLinting(editorRef.current);
+    }
+
+    if (socketRef.current) {
+      socketRef.current.emit(ACTIONS.LANG_CHANGE, { roomId, language: newLang });
     }
   };
 
   return (
-    <div className='flex flex-col h-screen'>
-      <div className='langSelectBar'>
-        <label htmlFor="lang-select">Language:</label>
-        <select
-          id="lang-select"
-          value={language}
-          onChange={handleLanguageChange}
-        >
-          {Object.entries(LANGUAGES).map(([key, { label }]) => (
-            <option key={key} value={key}>{label}</option>
-          ))}
-        </select>
+    <div className='flex flex-col h-screen relative'>
+      <div className='langSelectBar flex items-center justify-between'>
+        <div className="flex items-center gap-2">
+          <label htmlFor="lang-select">Language:</label>
+          <select
+            id="lang-select"
+            value={language}
+            onChange={handleLanguageChange}
+          >
+            {Object.entries(LANGUAGES).map(([key, { label }]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="settingsWrapper relative ml-auto flex items-center" ref={settingsRef}>
+          <button onClick={() => setSettingsOpen(!settingsOpen)} title="Editor Settings" className="settingsBtn p-1 rounded transition">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </button>
+          {settingsOpen && (
+            <div className="settingsMenu absolute right-0 top-full mt-2 w-64 rounded shadow-xl z-50 p-4 flex flex-col gap-3 text-sm">
+              <div className="flex flex-col gap-1">
+                <label>Font Family</label>
+                <select value={fontFamily} onChange={e => setFontFamily(e.target.value)} className="p-1 rounded">
+                  <option value='Consolas, "Courier New", monospace'>Consolas / Courier</option>
+                  <option value='"Fira Code", monospace'>Fira Code</option>
+                  <option value='"Source Code Pro", monospace'>Source Code Pro</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label>Font Size: {fontSize}px</label>
+                <input type="range" min="12" max="24" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label>Tab Size</label>
+                <select value={tabSize} onChange={e => setTabSize(Number(e.target.value))} className="p-1 rounded">
+                  <option value="2">2 Spaces</option>
+                  <option value="4">4 Spaces</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <input type="checkbox" id="word-wrap" checked={wordWrap} onChange={e => setWordWrap(e.target.checked)} />
+                <label htmlFor="word-wrap">Word Wrap</label>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <div className='flex-1 overflow-auto' id="realtimeEditor"></div>
     </div>
