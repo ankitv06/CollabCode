@@ -8,7 +8,12 @@ import { setupWSConnection, docs } from 'y-websocket/bin/utils';
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: "*", // Allows your Vercel frontend to connect
+        methods: ["GET", "POST"]
+    }
+});
 
 // Attach WebSocket server for Yjs without binding directly to the server to prevent conflicts
 const wss = new WebSocketServer({ noServer: true });
