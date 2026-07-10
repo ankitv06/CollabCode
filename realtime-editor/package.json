@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start": "node server.js",
     "server:dev": "nodemon server.js",
     "dev:all": "concurrently \"npm run dev\" \"npm run server:dev\"",
     "lint": "oxlint",
