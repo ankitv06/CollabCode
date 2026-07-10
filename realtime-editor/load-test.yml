@@ -1,0 +1,16 @@
+config:
+  target: "https://collabcode-backend-tj87.onrender.com"
+  phases:
+    - duration: 10
+      arrivalRate: 50
+      name: "Light test"
+scenarios:
+  - name: "User joins room and stays idle"
+    engine: socketio
+    flow:
+      - emit:
+          channel: "join"
+          data:
+            roomId: "load-test-room"
+            username: "ArtilleryBot"
+      - think: 30 # Hold the connection open for 30 seconds
